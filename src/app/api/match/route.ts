@@ -46,32 +46,62 @@ JSON Format:
     .map(j => `ID:${j.id} | Title:${j.title} at Company:${j.company} | Tags:${j.tags.join(',')} | Details:${j.description.slice(0, 200)}`)
     .join('\n')}`;
 
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ]
-    })
-  });
+  const groqKeys = apiKey
+    .split(",")
+    .map(k => k.trim().replace(/['"]/g, ""))
+    .filter(k => k.length > 0);
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Groq API returned HTTP ${response.status} - ${errText}`);
+  if (groqKeys.length === 0) {
+    throw new Error("No Groq API keys provided");
   }
 
-  const data = await response.json();
-  const rawText = data.choices[0]?.message?.content || "";
-  const results = parseAIResponse(rawText);
-  return NextResponse.json({ results });
+  let lastError: any = null;
+
+  for (let cycle = 1; cycle <= 2; cycle++) {
+    for (let i = 0; i < groqKeys.length; i++) {
+      const currentKey = groqKeys[i];
+      try {
+        console.log(`[Groq Rotator] Cycle ${cycle} - Trying key ${i + 1}/${groqKeys.length}`);
+        
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentKey}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            response_format: { type: "json_object" },
+            temperature: 0.1,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Groq API HTTP ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.choices[0]?.message?.content || "";
+        const results = parseAIResponse(rawText);
+        return NextResponse.json({ results });
+      } catch (error: any) {
+        lastError = error;
+        console.warn(`[Groq Rotator] Key ${i + 1} failed:`, error.message);
+        
+        // Wait briefly if we get rate-limited (429) or service overload (503)
+        if (error.message.includes("429") || error.message.includes("503")) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+  }
+
+  throw new Error(`All Groq API keys exhausted. Last error: ${lastError?.message}`);
 }
 
 async function callAnthropic(cvText: string, jobs: any[], apiKey: string) {
