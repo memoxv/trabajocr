@@ -152,6 +152,9 @@ function categorizeJob(job: Partial<Job>): string {
   if (/\b(dev|developer|engineer|software|code|tech|qa|testing|frontend|backend|fullstack|system|security|programador|web|it)\b/.test(text)) {
     return "Tecnología";
   }
+  if (/\b(admin|administracion|administración|assistant|asistente|recepcionista|secretaria|hr|rh|recursos humanos|human resources|recruiter|reclutador|talent|people ops|operations|operaciones)\b/.test(text)) {
+    return "Administración / RH";
+  }
   if (/\b(marketing|seo|growth|social|media|copywriter|content|advertising|publicidad)\b/.test(text)) {
     return "Marketing";
   }
@@ -708,7 +711,7 @@ export default function Home() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Constants
-  const CATEGORIES = ["Tecnología", "Marketing", "Diseño", "Soporte", "Ventas", "Finanzas", "Datos", "Otro"];
+  const CATEGORIES = ["Tecnología", "Administración / RH", "Marketing", "Diseño", "Soporte", "Ventas", "Finanzas", "Datos", "Otro"];
   const JOB_TYPES = ["Full-time", "Part-time", "Contrato", "Freelance"];
   const SOURCES = [
     { id: "remotive", label: "Remotive" },
