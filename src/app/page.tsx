@@ -54,6 +54,17 @@ interface AppSettings {
   aiProvider: "groq" | "anthropic";
 }
 
+interface CandidateProfile {
+  skills: string[];
+  roles: string[];
+  languages: {
+    es: "native" | "advanced" | "intermediate" | "basic" | "none";
+    en: "native" | "advanced" | "intermediate" | "basic" | "none";
+    pt?: "native" | "advanced" | "intermediate" | "basic" | "none";
+  };
+  level: "junior" | "mid" | "senior" | "lead";
+}
+
 // --- NORMALIZATION HELPERS (Client-Side) ---
 function decodeHTMLEntities(text: string): string {
   if (!text) return "";
@@ -352,12 +363,300 @@ async function fetchAndParseRSS(feedUrl: string): Promise<any[]> {
   }));
 }
 
+const SKILL_SYNONYMS: Record<string, string[]> = {
+  react: ["react", "reactjs", "react.js", "react-native", "react native"],
+  typescript: ["typescript", "ts"],
+  javascript: ["javascript", "js", "ecmascript"],
+  node: ["node", "nodejs", "node.js"],
+  vue: ["vue", "vuejs", "vue.js"],
+  angular: ["angular", "angularjs", "angular.js"],
+  next: ["next.js", "nextjs"],
+  aws: ["aws", "amazon web services", "ec2", "s3", "lambda"],
+  docker: ["docker", "container"],
+  kubernetes: ["kubernetes", "k8s"],
+  python: ["python", "py", "django", "flask", "fastapi"],
+  sql: ["sql", "mysql", "postgresql", "postgres", "sqlite", "oracle", "sql server", "mariadb"],
+  nosql: ["nosql", "mongodb", "mongo", "redis", "cassandra"],
+  java: ["java", "spring", "springboot", "spring-boot"],
+  "c#": ["c#", "c sharp", "csharp", ".net", "dotnet"],
+  php: ["php", "laravel", "symfony", "wordpress"],
+  ruby: ["ruby", "rails", "ror"],
+  flutter: ["flutter", "dart"],
+  kotlin: ["kotlin", "android"],
+  swift: ["swift", "ios", "xcode"],
+  qa: ["qa", "testing", "tester", "selenium", "cypress", "playwright", "quality assurance"],
+  support: ["support", "soporte", "helpdesk", "customer service", "atencion al cliente", "atención al cliente", "help desk"],
+  sales: ["sales", "ventas", "vendedor", "business development", "sdr", "bdr", "cold call"],
+  marketing: ["marketing", "seo", "sem", "copywriter", "content creator", "growth", "ads"],
+  design: ["design", "diseño", "ui", "ux", "figma", "photoshop", "illustrator", "sketch"]
+};
+
+const TECH_STACKS = ["react", "vue", "angular", "python", "java", "c#", "php", "ruby", "rust", "go", "flutter", "react native", "swift", "kotlin", "qa", "sales", "marketing", "design", "support"];
+
+const LANGUAGE_VALUES: Record<string, number> = {
+  none: 0,
+  basic: 1,
+  intermediate: 2,
+  advanced: 3,
+  native: 4
+};
+
+function detectJobRequiredLevel(job: Job): "junior" | "mid" | "senior" | "lead" {
+  const text = `${job.title} ${job.description}`.toLowerCase();
+  
+  if (/\b(lead|principal|architect|director|manager|jefe|gerente|lider|líder|staff|vp|head)\b/.test(text)) {
+    return "lead";
+  }
+  if (/\b(senior|sr|expert|experto|experienced|advanced|avanzado|veteran|principal)\b/.test(text)) {
+    return "senior";
+  }
+  
+  const yearsMatch = text.match(/\b([5-9]|\d{2})\+?\s*(years?|años?|anos?)\b/i) || 
+                     text.match(/\b(experiencia\s+de|experience\s+of)\s+([5-9]|\d{2})\b/i);
+  if (yearsMatch) {
+    return "senior";
+  }
+  
+  if (/\b(junior|jr|entry|intern|pasantia|pasantía|practicante|trainee|apprentice|principiante|asistente|auxiliar)\b/.test(text)) {
+    return "junior";
+  }
+  
+  return "mid";
+}
+
+function scoreJobLocally(job: Job, profile: CandidateProfile): AIScore {
+  const jobTitleLower = job.title.toLowerCase();
+  const jobDescLower = job.description.toLowerCase();
+  const jobTags = (job.tags || []).map(t => t.toLowerCase());
+
+  // 1. LANGUAGE CHECK (Critical to avoid false hopes)
+  const candEn = LANGUAGE_VALUES[profile.languages.en] || 0;
+  const candEs = LANGUAGE_VALUES[profile.languages.es] || 0;
+  const candPt = LANGUAGE_VALUES[profile.languages.pt || "none"] || 0;
+
+  let languageMismatch = false;
+  let languageMismatchLabel = "";
+  let candidateLevelLabel = "";
+
+  // English check
+  const requiresEnglish = job.language === "en" || job.language === "both" || 
+                          /\b(english|inglés|ingles|bilingual|bilingue)\b/.test(jobTitleLower) ||
+                          jobDescLower.includes("english required") || jobDescLower.includes("inglés avanzado");
+  if (requiresEnglish) {
+    if (candEn < LANGUAGE_VALUES.intermediate) {
+      languageMismatch = true;
+      languageMismatchLabel = "Inglés";
+      candidateLevelLabel = profile.languages.en.toUpperCase();
+    }
+  }
+
+  // Portuguese check
+  const requiresPortuguese = job.language === "pt" || /\b(portuguese|portugués|portugues)\b/.test(jobTitleLower);
+  if (requiresPortuguese) {
+    if (candPt < LANGUAGE_VALUES.intermediate) {
+      languageMismatch = true;
+      languageMismatchLabel = "Portugués";
+      candidateLevelLabel = (profile.languages.pt || "none").toUpperCase();
+    }
+  }
+
+  // Spanish check
+  const requiresSpanish = job.language === "es" || job.language === "both";
+  if (requiresSpanish) {
+    if (candEs < LANGUAGE_VALUES.intermediate) {
+      languageMismatch = true;
+      languageMismatchLabel = "Español";
+      candidateLevelLabel = profile.languages.es.toUpperCase();
+    }
+  }
+
+  if (languageMismatch) {
+    return {
+      score: 0,
+      reason: `Falta ${languageMismatchLabel} (tienes ${candidateLevelLabel})`
+    };
+  }
+
+  // 2. EXPERIENCE LEVEL CHECK
+  const jobLevel = detectJobRequiredLevel(job);
+  let levelPenalty = 0;
+  let levelMismatchCritical = false;
+
+  if (jobLevel === "lead") {
+    if (profile.level === "junior") {
+      levelMismatchCritical = true;
+    } else if (profile.level === "mid") {
+      levelPenalty = 45;
+    } else if (profile.level === "senior") {
+      levelPenalty = 15;
+    }
+  } else if (jobLevel === "senior") {
+    if (profile.level === "junior") {
+      levelMismatchCritical = true;
+    } else if (profile.level === "mid") {
+      levelPenalty = 20;
+    }
+  } else if (jobLevel === "mid") {
+    if (profile.level === "junior") {
+      levelPenalty = 15;
+    }
+  } else if (jobLevel === "junior") {
+    if (profile.level === "senior" || profile.level === "lead") {
+      levelPenalty = 15;
+    }
+  }
+
+  if (levelMismatchCritical) {
+    return {
+      score: 10,
+      reason: `Requiere seniority ${jobLevel.toUpperCase()} (eres ${profile.level.toUpperCase()})`
+    };
+  }
+
+  // 3. SKILL MATCH
+  let skillBonus = 0;
+  const matchedSkills: string[] = [];
+
+  profile.skills.forEach(skill => {
+    const synonyms = SKILL_SYNONYMS[skill] || [skill];
+    
+    const matchInTitle = synonyms.some(syn => {
+      const regex = new RegExp(`\\b${syn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(jobTitleLower);
+    });
+    
+    const matchInTags = synonyms.some(syn => jobTags.includes(syn));
+
+    const matchInDesc = synonyms.some(syn => {
+      const regex = new RegExp(`\\b${syn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(jobDescLower);
+    });
+
+    if (matchInTitle) {
+      skillBonus += 25;
+      matchedSkills.push(skill);
+    } else if (matchInTags) {
+      skillBonus += 15;
+      matchedSkills.push(skill);
+    } else if (matchInDesc) {
+      skillBonus += 8;
+      matchedSkills.push(skill);
+    }
+  });
+
+  if (skillBonus > 45) {
+    skillBonus = 45;
+  }
+
+  // 4. TECH STACKS MISMATCH CHECK (Avoid developer stack mismatch)
+  const jobRequiredStacks: string[] = [];
+  TECH_STACKS.forEach(stack => {
+    const synonyms = SKILL_SYNONYMS[stack] || [stack];
+    const inTitle = synonyms.some(syn => {
+      const regex = new RegExp(`\\b${syn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+      return regex.test(jobTitleLower);
+    });
+    
+    let mentions = 0;
+    synonyms.forEach(syn => {
+      const regex = new RegExp(`\\b${syn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      const matches = jobDescLower.match(regex);
+      if (matches) mentions += matches.length;
+    });
+
+    if (inTitle || mentions >= 2) {
+      jobRequiredStacks.push(stack);
+    }
+  });
+
+  let stackMismatchCount = 0;
+  jobRequiredStacks.forEach(reqStack => {
+    const candidateHasIt = profile.skills.some(candSkill => {
+      const candSyn = SKILL_SYNONYMS[candSkill] || [candSkill];
+      const reqSyn = SKILL_SYNONYMS[reqStack] || [reqStack];
+      return candSyn.some(cs => reqSyn.includes(cs)) || candSkill === reqStack;
+    });
+
+    if (!candidateHasIt) {
+      stackMismatchCount++;
+    }
+  });
+
+  const stackMismatchPenalty = stackMismatchCount * 25;
+
+  // 5. ROLE MATCH
+  let roleMatchBonus = 0;
+  let hasRoleIntersection = false;
+  profile.roles.forEach(role => {
+    if (jobTitleLower.includes(role)) {
+      hasRoleIntersection = true;
+    } else {
+      const words = role.split(/\s+/);
+      const keyWord = words.find(w => w !== "developer" && w !== "engineer" && w !== "diseñador" && w !== "programador" && w !== "assistant" && w !== "agent" && w !== "manager" && w !== "analyst");
+      if (keyWord && jobTitleLower.includes(keyWord)) {
+        hasRoleIntersection = true;
+      }
+    }
+  });
+
+  if (hasRoleIntersection) {
+    roleMatchBonus = 15;
+  } else {
+    roleMatchBonus = -10;
+  }
+
+  // 6. TOTAL CALCULATION
+  let score = 40 + skillBonus + roleMatchBonus - levelPenalty - stackMismatchPenalty;
+
+  if (requiresEnglish && candEn === LANGUAGE_VALUES.intermediate) {
+    score -= 20;
+  }
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+
+  // 7. DYNAMIC REASON GENERATION
+  let reason = "";
+  if (score === 0) {
+    if (languageMismatch) {
+      reason = `Requiere ${languageMismatchLabel} (tienes ${candidateLevelLabel})`;
+    } else if (stackMismatchCount > 0) {
+      reason = `Incompatible (diferente tecnología requerida: ${jobRequiredStacks.slice(0, 2).join(", ")})`;
+    } else {
+      reason = "Perfil no coincide con los requisitos mínimos";
+    }
+  } else if (score < 40) {
+    if (stackMismatchCount > 0) {
+      reason = `Tecnologías no coinciden (busca ${jobRequiredStacks.slice(0, 2).join(", ")})`;
+    } else if (levelPenalty > 0) {
+      reason = `Requiere seniority superior (${jobLevel.toUpperCase()})`;
+    } else {
+      reason = "Baja coincidencia de habilidades";
+    }
+  } else if (score < 70) {
+    const matchedStr = matchedSkills.slice(0, 2).join(", ");
+    if (levelPenalty > 0) {
+      reason = `Coincide en ${matchedStr}, pero requiere nivel ${jobLevel.toUpperCase()}`;
+    } else if (requiresEnglish && candEn === LANGUAGE_VALUES.intermediate) {
+      reason = `Coincide en ${matchedStr}, pero requiere inglés fluido`;
+    } else {
+      reason = `Coincidencia media en habilidades (${matchedStr})`;
+    }
+  } else {
+    const matchedStr = matchedSkills.slice(0, 3).join(", ");
+    const levelStr = profile.level.toUpperCase();
+    reason = `Excelente coincidencia en ${matchedStr} y nivel ${levelStr}`;
+  }
+
+  return { score, reason };
+}
+
 export default function Home() {
   // --- STATE ---
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [aiScores, setAiScores] = useState<Record<string, AIScore>>({});
   const [loading, setLoading] = useState(true);
+  const [candidateProfile, setCandidateProfile] = useState<CandidateProfile | null>(null);
   
   // API Fetch Statuses
   const [fetchStatus, setFetchStatus] = useState<Record<string, FetchStatus>>({
@@ -458,9 +757,26 @@ export default function Home() {
     const storedCVText = localStorage.getItem("tcr_cv_text");
     if (storedCVText) setCvText(storedCVText);
 
+    const storedProfile = localStorage.getItem("tcr_cv_profile");
+    if (storedProfile) {
+      try { setCandidateProfile(JSON.parse(storedProfile)); } catch (e) { console.error(e); }
+    }
+
     // 2. Fetch Jobs client-side
     fetchJobs(joobleKey);
   }, []);
+
+  // Recalculate scores locally when jobs load or profile changes
+  useEffect(() => {
+    if (allJobs.length > 0 && candidateProfile) {
+      const nextScores: Record<string, AIScore> = {};
+      allJobs.forEach(job => {
+        nextScores[job.id] = scoreJobLocally(job, candidateProfile);
+      });
+      setAiScores(nextScores);
+      localStorage.setItem("tcr_cv_scores", JSON.stringify(nextScores));
+    }
+  }, [allJobs, candidateProfile]);
 
   // --- CLIENT-SIDE FETCH ENGINE ---
   const fetchJobs = async (joobleKeyToUse: string) => {
@@ -1231,18 +1547,12 @@ export default function Home() {
 
     setIsAnalyzingCV(true);
 
-    // Get top 30 jobs sorted by date
-    const jobsToSend = [...allJobs]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 30);
-
     try {
       const res = await fetch("/api/match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cvText,
-          jobs: jobsToSend,
           provider: settings.aiProvider,
           apiKey: providerKey
         })
@@ -1254,16 +1564,19 @@ export default function Home() {
       }
 
       const data = await res.json();
-      const results: { id: string; score: number; reason: string }[] = data.results || [];
+      const profile: CandidateProfile = data.profile;
 
+      if (!profile || !profile.skills || !profile.languages || !profile.level) {
+        throw new Error("El perfil extraído por la IA no tiene el formato esperado.");
+      }
+
+      setCandidateProfile(profile);
+      localStorage.setItem("tcr_cv_profile", JSON.stringify(profile));
+
+      // Calculate compatibility scores locally for ALL loaded jobs
       const nextScores: Record<string, AIScore> = {};
-      results.forEach(item => {
-        if (item && item.id !== undefined && item.score !== undefined) {
-          nextScores[item.id] = {
-            score: Number(item.score) || 0,
-            reason: item.reason || ""
-          };
-        }
+      allJobs.forEach(job => {
+        nextScores[job.id] = scoreJobLocally(job, profile);
       });
 
       setAiScores(nextScores);
@@ -1273,7 +1586,7 @@ export default function Home() {
       // Auto sort by compatibilidad
       setActiveFilters(prev => ({ ...prev, sortBy: "compatibilidad" }));
       setIsCVExpanded(false); // collapse panel on success
-      alert("Análisis completado. Los puestos se ordenaron por compatibilidad con tu CV.");
+      alert("Currículum analizado con éxito por IA. ¡Se calcularon las compatibilidades para todos los empleos al instante!");
 
     } catch (err: any) {
       console.error(err);
@@ -1286,8 +1599,10 @@ export default function Home() {
   const clearCVAnalysis = () => {
     setAiScores({});
     setCvText("");
+    setCandidateProfile(null);
     localStorage.removeItem("tcr_cv_scores");
     localStorage.removeItem("tcr_cv_text");
+    localStorage.removeItem("tcr_cv_profile");
     if (activeFilters.sortBy === "compatibilidad") {
       setActiveFilters(prev => ({ ...prev, sortBy: "reciente" }));
     }
@@ -1672,10 +1987,63 @@ export default function Home() {
                   value={cvText}
                   onChange={(e) => setCvText(e.target.value)}
                   rows={6} 
-                  placeholder="Pega el texto de tu currículum (Habilidades, herramientas, experiencia, idiomas, etc.)..." 
+                  placeholder="Pega el texto de tu currículum (Habilidades, herramientas, experiencia, idiomas, etc.)...." 
                   className="w-full p-4 bg-slate-950 text-slate-100 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all custom-scrollbar font-mono placeholder-slate-600 leading-relaxed"
                 />
               </div>
+
+              {candidateProfile && (
+                <div className="bg-slate-950/75 rounded-xl p-5 border border-slate-800 space-y-4 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                    <h5 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center space-x-1.5">
+                      <span className="text-accent text-[14px]">⚡</span>
+                      <span>Perfil Profesional Identificado por IA</span>
+                    </h5>
+                    <span className="text-[10px] text-slate-500 font-semibold font-mono">Seniority: <span className="font-extrabold text-white capitalize">{candidateProfile.level}</span></span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5 text-xs">
+                    <div className="space-y-1">
+                      <span className="text-slate-500 font-bold block text-[10px] uppercase tracking-wider">Idiomas & Niveles</span>
+                      <div className="flex items-center space-x-3.5 bg-slate-900/50 p-2.5 rounded-xl border border-slate-850">
+                        <span className="flex items-center space-x-1.5" title="Español">
+                          <span>🇨🇷 ES:</span>
+                          <span className="font-extrabold text-white font-mono text-[11px] capitalize">{candidateProfile.languages.es || "none"}</span>
+                        </span>
+                        <span className="flex items-center space-x-1.5" title="Inglés">
+                          <span>🇬🇧 EN:</span>
+                          <span className="font-extrabold text-white font-mono text-[11px] capitalize">{candidateProfile.languages.en || "none"}</span>
+                        </span>
+                        {candidateProfile.languages.pt && candidateProfile.languages.pt !== "none" && (
+                          <span className="flex items-center space-x-1.5" title="Portugués">
+                            <span>🇵🇹 PT:</span>
+                            <span className="font-extrabold text-white font-mono text-[11px] capitalize">{candidateProfile.languages.pt}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-slate-550 font-bold block text-[10px] uppercase tracking-wider">Roles Relacionados</span>
+                      <div className="flex flex-wrap gap-1.5 bg-slate-900/50 p-2.5 rounded-xl border border-slate-850">
+                        {candidateProfile.roles.map(role => (
+                          <span key={role} className="bg-slate-850 text-slate-200 border border-slate-750 px-2 py-0.5 rounded text-[10px] font-bold capitalize">
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <span className="text-slate-550 font-bold block text-[10px] uppercase tracking-wider">Aptitudes & Tecnologías Clave</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {candidateProfile.skills.map(skill => (
+                          <span key={skill} className="bg-primary/20 text-primary-light border border-primary/30 px-2.5 py-0.75 rounded-lg text-[10px] font-extrabold font-mono">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
                 <div className="flex flex-wrap gap-2.5">

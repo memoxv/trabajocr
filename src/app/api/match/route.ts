@@ -1,24 +1,18 @@
 import { NextResponse } from "next/server";
 
-interface MatchResult {
-  id: string;
-  score: number;
-  reason: string;
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { cvText, jobs, provider, apiKey } = body;
+    const { cvText, provider, apiKey } = body;
 
-    if (!cvText || !jobs || !Array.isArray(jobs) || !provider || !apiKey) {
-      return NextResponse.json({ error: "Faltan parámetros obligatorios" }, { status: 400 });
+    if (!cvText || !provider || !apiKey) {
+      return NextResponse.json({ error: "Faltan parámetros obligatorios (cvText, provider o apiKey)" }, { status: 400 });
     }
 
     if (provider === "groq") {
-      return await callGroq(cvText, jobs, apiKey);
+      return await callGroq(cvText, apiKey);
     } else if (provider === "anthropic") {
-      return await callAnthropic(cvText, jobs, apiKey);
+      return await callAnthropic(cvText, apiKey);
     } else {
       return NextResponse.json({ error: "Proveedor no soportado" }, { status: 400 });
     }
@@ -28,23 +22,30 @@ export async function POST(request: Request) {
   }
 }
 
-async function callGroq(cvText: string, jobs: any[], apiKey: string) {
-  const systemPrompt = `You are a job matching assistant for Costa Rica and LATAM. Given a CV and a list of jobs, analyze compatibility considering: technical skills match, language requirements, timezone compatibility with Costa Rica (UTC-6), salary expectations for CR market, and experience level. Return ONLY valid JSON containing a single array of objects under a key named "results", no markdown, no explanation.
+async function callGroq(cvText: string, apiKey: string) {
+  const systemPrompt = `You are an expert CV Parser and Candidate Profile Extractor.
+Analyze the provided CV text and extract a structured JSON profile representing the candidate.
+Follow these extraction rules strictly:
+1. "skills": An array of technical/hard skills, programming languages, frameworks, databases, and key tools mentioned in the CV (e.g. ["react", "typescript", "node.js", "sql"]). Normalize everything to lowercase.
+2. "roles": An array of matching professional roles or job titles matching their experience (e.g. ["frontend developer", "fullstack engineer", "customer support agent", "qa tester"]). Normalize to lowercase.
+3. "languages": A dictionary mapping language codes ("es", "en", "pt") to their level. The level MUST be one of: "native", "advanced", "intermediate", "basic", "none". If a language is not mentioned, classify it as "none" unless Spanish ("es") can be inferred from the CV language (e.g., if the CV is written in Spanish, "es" is likely "native" or "advanced").
+4. "level": The overall experience/seniority level. MUST be exactly one of: "junior", "mid", "senior", "lead". Base this on their years of experience and role titles.
 
-JSON Format:
+Return ONLY valid JSON matching this exact structure:
 {
-  "results": [
-    {
-      "id": "job-id-here",
-      "score": 85,
-      "reason": "Describe the reason briefly in Spanish (max 12 words)"
-    }
-  ]
+  "profile": {
+    "skills": ["skill1", "skill2"],
+    "roles": ["role1", "role2"],
+    "languages": {
+      "es": "native|advanced|intermediate|basic|none",
+      "en": "native|advanced|intermediate|basic|none",
+      "pt": "native|advanced|intermediate|basic|none"
+    },
+    "level": "junior|mid|senior|lead"
+  }
 }`;
 
-  const userPrompt = `CV:\n${cvText}\n\nJobs (first 30 by date):\n${jobs
-    .map(j => `ID:${j.id} | Title:${j.title} at Company:${j.company} | Tags:${j.tags.join(',')} | Details:${j.description.slice(0, 200)}`)
-    .join('\n')}`;
+  const userPrompt = `CV Text:\n${cvText}`;
 
   const groqKeys = apiKey
     .split(",")
@@ -87,13 +88,12 @@ JSON Format:
 
         const data = await response.json();
         const rawText = data.choices[0]?.message?.content || "";
-        const results = parseAIResponse(rawText);
-        return NextResponse.json({ results });
+        const profile = parseAIResponse(rawText);
+        return NextResponse.json({ profile });
       } catch (error: any) {
         lastError = error;
         console.warn(`[Groq Rotator] Key ${i + 1} failed:`, error.message);
         
-        // Wait briefly if we get rate-limited (429) or service overload (503)
         if (error.message.includes("429") || error.message.includes("503")) {
           await new Promise(r => setTimeout(r, 1000));
         }
@@ -104,12 +104,30 @@ JSON Format:
   throw new Error(`All Groq API keys exhausted. Last error: ${lastError?.message}`);
 }
 
-async function callAnthropic(cvText: string, jobs: any[], apiKey: string) {
-  const systemPrompt = `You are a job matching assistant for Costa Rica and LATAM. Given a CV and a list of jobs, analyze compatibility considering: technical skills match, language requirements, timezone compatibility with Costa Rica (UTC-6), salary expectations for CR market, and experience level. Return ONLY valid JSON, no markdown, no explanation: [{"id": string, "score": 0-100, "reason": string (max 12 words in Spanish)}]`;
+async function callAnthropic(cvText: string, apiKey: string) {
+  const systemPrompt = `You are an expert CV Parser and Candidate Profile Extractor.
+Analyze the provided CV text and extract a structured JSON profile representing the candidate.
+Follow these extraction rules strictly:
+1. "skills": An array of technical/hard skills, programming languages, frameworks, databases, and key tools mentioned in the CV (e.g. ["react", "typescript", "node.js", "sql"]). Normalize everything to lowercase.
+2. "roles": An array of matching professional roles or job titles matching their experience (e.g. ["frontend developer", "fullstack engineer", "customer support agent", "qa tester"]). Normalize to lowercase.
+3. "languages": A dictionary mapping language codes ("es", "en", "pt") to their level. The level MUST be one of: "native", "advanced", "intermediate", "basic", "none". If a language is not mentioned, classify it as "none" unless Spanish ("es") can be inferred from the CV language (e.g., if the CV is written in Spanish, "es" is likely "native" or "advanced").
+4. "level": The overall experience/seniority level. MUST be exactly one of: "junior", "mid", "senior", "lead". Base this on their years of experience and role titles.
 
-  const userPrompt = `CV:\n${cvText}\n\nJobs (first 30 by date):\n${jobs
-    .map(j => `ID:${j.id} | Title:${j.title} at Company:${j.company} | Tags:${j.tags.join(',')} | Details:${j.description.slice(0, 200)}`)
-    .join('\n')}`;
+Return ONLY valid JSON matching this exact structure:
+{
+  "profile": {
+    "skills": ["skill1", "skill2"],
+    "roles": ["role1", "role2"],
+    "languages": {
+      "es": "native|advanced|intermediate|basic|none",
+      "en": "native|advanced|intermediate|basic|none",
+      "pt": "native|advanced|intermediate|basic|none"
+    },
+    "level": "junior|mid|senior|lead"
+  }
+}`;
+
+  const userPrompt = `CV Text:\n${cvText}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -120,7 +138,7 @@ async function callAnthropic(cvText: string, jobs: any[], apiKey: string) {
     },
     body: JSON.stringify({
       model: "claude-3-5-sonnet-20241022",
-      max_tokens: 2000,
+      max_tokens: 1500,
       system: systemPrompt,
       messages: [
         { role: "user", content: userPrompt }
@@ -135,23 +153,19 @@ async function callAnthropic(cvText: string, jobs: any[], apiKey: string) {
 
   const data = await response.json();
   const rawText = data.content[0]?.text || "";
-  const results = parseAIResponse(rawText);
-  return NextResponse.json({ results });
+  const profile = parseAIResponse(rawText);
+  return NextResponse.json({ profile });
 }
 
-function parseAIResponse(text: string): MatchResult[] {
+function parseAIResponse(text: string): any {
   let clean = text.trim();
   if (clean.startsWith("```")) {
     clean = clean.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
   }
   
   const parsed = JSON.parse(clean);
-  if (Array.isArray(parsed)) {
-    return parsed;
-  } else if (parsed.results && Array.isArray(parsed.results)) {
-    return parsed.results;
-  } else if (parsed.jobs && Array.isArray(parsed.jobs)) {
-    return parsed.jobs;
+  if (parsed.profile) {
+    return parsed.profile;
   }
-  throw new Error("Formato de JSON devuelto por la IA no reconocido");
+  return parsed;
 }
