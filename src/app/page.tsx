@@ -1807,7 +1807,7 @@ export default function Home() {
                           <div className="flex items-center space-x-2.5 bg-slate-50 border border-slate-200 rounded-lg p-2 w-full" title={scoreObj.reason}>
                             <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
-                                <circle cx="20" cy="20" r="18" stroke="#e2e8f0" stroke-width="3" fill="transparent" />
+                                <circle cx="20" cy="20" r="18" stroke="#e2e8f0" strokeWidth="3" fill="transparent" />
                                 <circle 
                                   cx="20" 
                                   cy="20" 
