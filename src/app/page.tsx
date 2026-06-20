@@ -708,7 +708,6 @@ export default function Home() {
   });
 
   // UI state
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCVExpanded, setIsCVExpanded] = useState(false);
   const [isShowingSavedOnly, setIsShowingSavedOnly] = useState(false);
   const [displayLimit, setDisplayLimit] = useState(30);
@@ -1566,20 +1565,6 @@ export default function Home() {
     localStorage.setItem("tcr_favorites", JSON.stringify(nextFavs));
   };
 
-  // --- SETTINGS ACTIONS ---
-  const saveSettings = (updated: AppSettings) => {
-    setSettings(updated);
-    localStorage.setItem("tcr_settings", JSON.stringify(updated));
-    localStorage.setItem("tcr_jooble_key", updated.joobleKey);
-    localStorage.setItem("tcr_groq_key", updated.groqKey);
-    localStorage.setItem("tcr_anthropic_key", updated.anthropicKey);
-    localStorage.setItem("tcr_ai_provider", updated.aiProvider);
-    setIsSettingsOpen(false);
-
-    // Re-fetch jobs
-    fetchJobs(updated.joobleKey);
-  };
-
   // --- CV MATCHER RUN ---
   const runCVAnalysis = async () => {
     if (!cvText.trim()) {
@@ -1589,8 +1574,7 @@ export default function Home() {
 
     const providerKey = settings.aiProvider === "groq" ? settings.groqKey : settings.anthropicKey;
     if (!providerKey) {
-      alert(`Falta configurar la clave API para el proveedor de IA (${settings.aiProvider === "groq" ? "Groq" : "Anthropic"}).`);
-      setIsSettingsOpen(true);
+      alert(`Falta configurar la clave API en las variables de entorno (.env.local) para ${settings.aiProvider === "groq" ? "Groq" : "Anthropic"}.`);
       return;
     }
 
@@ -1757,14 +1741,6 @@ export default function Home() {
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ml-1 ${isShowingSavedOnly ? "bg-accent-dark text-white" : "bg-slate-700 text-slate-350"}`}>
                 {favorites.length}
               </span>
-            </button>
-
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all-300 border border-slate-750" 
-              title="Configuración de APIs"
-            >
-              <Settings className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -2128,29 +2104,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <button 
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="text-slate-400 hover:text-white text-xs font-bold flex items-center space-x-1.5 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Configurar Proveedores</span>
-                </button>
               </div>
-
-              {!isAIKeyConfigured && (
-                <div className="bg-amber-950/40 border border-amber-900/60 text-amber-250 rounded-xl p-4 text-xs flex items-start space-x-3">
-                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <div className="leading-relaxed">
-                    <span className="font-bold">Requiere Clave API</span>: El validador de CV requiere una clave de API de Groq configurada localmente. 
-                    <button 
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="underline font-extrabold ml-1.5 hover:text-white"
-                    >
-                      Configurar Claves de API Ahora
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -2395,163 +2349,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* SETTINGS MODAL */}
-      {isSettingsOpen && (
-        <SettingsModal 
-          currentSettings={settings}
-          onClose={() => setIsSettingsOpen(false)}
-          onSave={saveSettings}
-        />
-      )}
-    </div>
-  );
-}
-
-// --- SETTINGS MODAL SUBCOMPONENT ---
-interface SettingsModalProps {
-  currentSettings: AppSettings;
-  onClose: () => void;
-  onSave: (settings: AppSettings) => void;
-}
-
-function SettingsModal({ currentSettings, onClose, onSave }: SettingsModalProps) {
-  const [joobleKey, setJoobleKey] = useState(currentSettings.joobleKey);
-  const [groqKey, setGroqKey] = useState(currentSettings.groqKey);
-  const [anthropicKey, setAnthropicKey] = useState(currentSettings.anthropicKey);
-  const [aiProvider, setAiProvider] = useState<"groq" | "anthropic">(currentSettings.aiProvider);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        
-        {/* Modal Header */}
-        <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="font-bold text-slate-800 flex items-center space-x-2">
-            <Settings className="w-5 h-5 text-slate-500" />
-            <span>Configuración de APIs</span>
-          </h3>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div className="p-5 space-y-4">
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Ingresá tus claves de API correspondientes para habilitar las características premium del buscador. Se guardan localmente en tu navegador.
-          </p>
-
-          {/* Jooble Key */}
-          <div className="space-y-1">
-            <label className="block text-xs font-bold text-slate-600">Jooble API Key</label>
-            <input 
-              type="password" 
-              value={joobleKey}
-              onChange={(e) => setJoobleKey(e.target.value)}
-              placeholder="Tu Jooble API Key..." 
-              className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700"
-            />
-            <span className="block text-[10px] text-slate-400">
-              Obtenible gratis en{" "}
-              <a 
-                href="https://jooble.org/api/about" 
-                target="_blank" 
-                rel="noreferrer"
-                className="text-primary hover:underline font-semibold"
-              >
-                jooble.org/api/about
-              </a>
-              . Habilita búsquedas en Costa Rica.
-            </span>
-          </div>
-
-          <div className="border-t border-slate-100 pt-3 space-y-3">
-            <h4 className="text-xs font-bold text-slate-700 flex items-center space-x-1">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>Proveedor de Inteligencia Artificial (CV Matcher)</span>
-            </h4>
-            
-            {/* AI Provider Dropdown */}
-            <div className="space-y-1">
-              <label className="block text-xs font-bold text-slate-600">Proveedor</label>
-              <select 
-                value={aiProvider}
-                onChange={(e) => setAiProvider(e.target.value as "groq" | "anthropic")}
-                className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary text-slate-700 bg-white"
-              >
-                <option value="groq">Groq (Llama 3.3) — Rápido, seguro y gratuito</option>
-                <option value="anthropic">Anthropic (Claude 3.5 Sonnet) — Máxima calidad</option>
-              </select>
-            </div>
-
-            {/* Groq Key */}
-            {aiProvider === "groq" ? (
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-600">Groq API Key</label>
-                <input 
-                  type="password" 
-                  value={groqKey}
-                  onChange={(e) => setGroqKey(e.target.value)}
-                  placeholder="gsk_..." 
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700"
-                />
-                <span className="block text-[10px] text-slate-400">
-                  Obtenible gratis en{" "}
-                  <a 
-                    href="https://console.groq.com" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-primary hover:underline font-semibold"
-                  >
-                    console.groq.com
-                  </a>
-                  .
-                </span>
-              </div>
-            ) : (
-              /* Anthropic Key */
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-600">Anthropic API Key</label>
-                <input 
-                  type="password" 
-                  value={anthropicKey}
-                  onChange={(e) => setAnthropicKey(e.target.value)}
-                  placeholder="sk-ant-..." 
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-slate-700"
-                />
-                <span className="block text-[10px] text-slate-400">
-                  Clave estándar de Claude API. Se ejecuta en el servidor de forma segura.
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-            <p className="text-[10px] text-slate-500 leading-relaxed">
-              <strong>🔒 Seguridad local</strong>: Tu clave se guarda solo en este navegador y se envía directamente a la API correspondiente sin intermediarios. Nunca viaja a ningún otro servidor externo.
-            </p>
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end space-x-2">
-          <button 
-            onClick={onClose}
-            className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-100 transition-colors text-slate-700"
-          >
-            Cancelar
-          </button>
-          <button 
-            onClick={() => onSave({ joobleKey, groqKey, anthropicKey, aiProvider })}
-            className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
-          >
-            Guardar Cambios
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
