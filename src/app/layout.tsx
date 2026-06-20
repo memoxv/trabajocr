@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "TrabajoCR 🇨🇷 — Empleos Remotos y Locales en Costa Rica",
+  title: "TrabajosCR 🇨🇷 — Empleos Remotos y Locales en Costa Rica",
   description: "Buscador de empleos consolidado y validador de compatibilidad de currículum (CV) impulsado por IA.",
 };
 
@@ -19,10 +19,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full">
-      <body className="min-h-full flex flex-col bg-background text-text">
+      <body className={`${plusJakartaSans.className} min-h-full flex flex-col bg-background text-text`}>
         {children}
       </body>
     </html>
   );
 }
-export { inter }; // Export font if needed elsewhere
+export { plusJakartaSans };
+

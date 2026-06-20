@@ -1320,36 +1320,55 @@ export default function Home() {
   const isCVParsed = Object.keys(aiScores).length > 0;
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen bg-slate-50">
       {/* HEADER */}
-      <header className="bg-navy text-white shadow-md sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-primary text-white p-2 rounded-lg font-bold text-xl shadow-sm tracking-wider flex items-center">
-              TrabajoCR <span className="ml-2 text-2xl leading-none">🇨🇷</span>
+      <header className="bg-glass-dark border-b border-glass-dark text-white sticky top-0 z-40 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between">
+          <div className="flex items-center space-x-3.5">
+            {/* Custom SVG Logo */}
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-dark via-primary to-primary-light shadow-md animate-pulse-glow">
+              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                <rect width="20" height="14" x="2" y="6" rx="2" />
+                <path d="M12 12h.01" />
+              </svg>
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent"></span>
+              </span>
             </div>
-            <div className="hidden sm:block text-xs text-slate-400 border-l border-slate-700 pl-3">
-              Agregador de empleos y validador de CV
+            <div className="flex flex-col">
+              <span className="text-lg font-black tracking-tight leading-none text-white">
+                Trabajos<span className="text-shimmer font-mono font-black">CR</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase mt-0.5">
+                Empleos & Inteligencia Artificial
+              </span>
+            </div>
+            <div className="hidden md:block text-xs text-slate-500 border-l border-slate-800 pl-3.5 py-1">
+              Agregador inteligente de empleos en Costa Rica 🇨🇷
             </div>
           </div>
           
           <div className="flex items-center space-x-3">
             <button 
               onClick={() => setIsShowingSavedOnly(!isShowingSavedOnly)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-1.5 transition-colors border ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all duration-300 border ${
                 isShowingSavedOnly 
-                  ? "bg-amber-600 border-amber-500 text-white" 
-                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700"
+                  ? "bg-accent border-accent-dark text-white shadow-md scale-105" 
+                  : "bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-750"
               }`}
             >
-              <Star className={`w-4 h-4 ${isShowingSavedOnly ? "fill-current text-white" : "text-amber-500 fill-current"}`} />
+              <Star className={`w-4 h-4 ${isShowingSavedOnly ? "fill-current text-white" : "text-amber-400 fill-current"}`} />
               <span>Guardados</span>
-              <span className="bg-accent text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1">{favorites.length}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ml-1 ${isShowingSavedOnly ? "bg-accent-dark text-white" : "bg-slate-700 text-slate-350"}`}>
+                {favorites.length}
+              </span>
             </button>
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors border border-slate-700" 
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all-300 border border-slate-750" 
               title="Configuración de APIs"
             >
               <Settings className="w-5 h-5" />
@@ -1359,72 +1378,75 @@ export default function Home() {
       </header>
 
       {/* MAIN CONTENT CONTAINER */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 py-8 space-y-6">
 
         {/* STICKY FILTERS PANEL */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+        <div className="bg-white rounded-2xl shadow-premium border border-slate-200 p-6 space-y-6 transition-all-300 hover:shadow-premium-hover">
           
           {/* Row 1: Search, Date, Relevance, Salario, Sort */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-end">
             {/* Search Input */}
-            <div className="lg:col-span-3 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Search className="w-5 h-5" />
+            <div className="lg:col-span-3 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Buscar</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input 
+                  type="text" 
+                  value={keywordInput}
+                  onChange={handleKeywordChange}
+                  placeholder="Cargo, empresa o palabras clave..." 
+                  className="pl-9 pr-4 py-2 w-full border border-slate-250 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/25 focus:border-primary-dark transition-all placeholder-slate-400 text-slate-700 font-medium"
+                />
               </div>
-              <input 
-                type="text" 
-                value={keywordInput}
-                onChange={handleKeywordChange}
-                placeholder="Buscar cargo, empresa, palabras clave..." 
-                className="pl-10 pr-4 py-2 w-full border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-slate-400 text-slate-700"
-              />
             </div>
 
             {/* Language Filter */}
-            <div className="lg:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Idioma</label>
+            <div className="lg:col-span-2 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Idioma</label>
               <select 
                 value={activeFilters.language}
                 onChange={(e) => { setActiveFilters(prev => ({ ...prev, language: e.target.value })); setDisplayLimit(30); }}
-                className="w-full border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-slate-700"
+                className="w-full border border-slate-250 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/25 focus:border-primary-dark bg-white text-slate-700 font-medium transition-all"
               >
                 <option value="todos">Cualquier idioma</option>
-                <option value="es">🇪🇸 Sólo Español</option>
-                <option value="en">🇬🇧 Sólo Inglés</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="en">🇬🇧 Inglés</option>
               </select>
             </div>
 
             {/* Date Filter */}
-            <div className="lg:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Fecha</label>
+            <div className="lg:col-span-2 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</label>
               <select 
                 value={activeFilters.date}
                 onChange={(e) => { setActiveFilters(prev => ({ ...prev, date: e.target.value })); setDisplayLimit(30); }}
-                className="w-full border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-slate-700"
+                className="w-full border border-slate-250 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/25 focus:border-primary-dark bg-white text-slate-700 font-medium transition-all"
               >
                 <option value="todo">Cualquier fecha</option>
-                <option value="hoy">Hoy</option>
+                <option value="hoy">Publicados hoy</option>
                 <option value="semana">Última semana</option>
                 <option value="mes">Último mes</option>
               </select>
             </div>
 
             {/* Relevance CR */}
-            <div className="lg:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Relevancia Costa Rica</label>
+            <div className="lg:col-span-2 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Relevancia CR</label>
               <select 
                 value={activeFilters.relevance}
                 onChange={(e) => { setActiveFilters(prev => ({ ...prev, relevance: e.target.value })); setDisplayLimit(30); }}
-                className="w-full border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-slate-700"
+                className="w-full border border-slate-250 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/25 focus:border-primary-dark bg-white text-slate-700 font-medium transition-all"
               >
-                <option value="alta-media">Alta + Media (Default)</option>
-                <option value="alta">Alta solamente</option>
-                <option value="todas">Todas</option>
+                <option value="alta-media">Alta + Media (Recomendado)</option>
+                <option value="alta">Solo Alta Relevancia</option>
+                <option value="todas">Todas las ofertas</option>
               </select>
             </div>
 
             {/* Con Salario Toggle */}
-            <div className="lg:col-span-2 flex items-center justify-start pt-4 lg:pt-0">
+            <div className="lg:col-span-1.5 flex items-center justify-start pb-2.5">
               <label className="inline-flex items-center cursor-pointer select-none">
                 <input 
                   type="checkbox" 
@@ -1432,44 +1454,44 @@ export default function Home() {
                   onChange={(e) => { setActiveFilters(prev => ({ ...prev, withSalary: e.target.checked })); setDisplayLimit(30); }}
                   className="sr-only peer"
                 />
-                <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success"></div>
-                <span className="ms-3 text-sm font-medium text-slate-700">Con Salario</span>
+                <div className="relative w-10 h-5.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2.5px] after:start-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-success"></div>
+                <span className="ms-2.5 text-xs font-bold text-slate-650 uppercase tracking-wider">Con Salario</span>
               </label>
             </div>
 
             {/* Sort by */}
-            <div className="lg:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 mb-1">Ordenar por</label>
+            <div className="lg:col-span-1.5 space-y-1.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Ordenar por</label>
               <select 
                 value={activeFilters.sortBy}
                 onChange={(e) => { setActiveFilters(prev => ({ ...prev, sortBy: e.target.value })); setDisplayLimit(30); }}
-                className="w-full border border-slate-300 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-medium bg-white text-slate-700"
+                className="w-full border border-slate-250 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/25 focus:border-primary-dark font-semibold bg-white text-slate-700 transition-all"
               >
                 <option value="reciente">Más reciente</option>
-                <option value="relevancia_cr">Mayor relevancia CR</option>
-                <option value="compatibilidad" disabled={!isCVParsed} className={!isCVParsed ? "text-slate-400" : ""}>
-                  Mayor compatibilidad (CV)
+                <option value="relevancia_cr">Relevancia CR</option>
+                <option value="compatibilidad" disabled={!isCVParsed}>
+                  Coincidencia CV
                 </option>
               </select>
             </div>
           </div>
 
           {/* Row 2: Categories, Job Types, Sources */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-5 border-t border-slate-100">
             {/* Categories pills */}
-            <div className="md:col-span-5">
-              <span className="block text-xs font-semibold text-slate-500 mb-2">Categorías</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="md:col-span-5 space-y-2">
+              <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Categorías</span>
+              <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map(cat => {
                   const active = activeFilters.categories.includes(cat);
                   return (
                     <button
                       key={cat}
                       onClick={() => toggleCategory(cat)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 focus:outline-none cursor-pointer ${
                         active 
-                          ? "bg-primary text-white border-primary" 
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
+                          ? "bg-primary text-white border-primary shadow-sm scale-102" 
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-350 hover:bg-slate-50"
                       }`}
                     >
                       {cat}
@@ -1480,19 +1502,19 @@ export default function Home() {
             </div>
 
             {/* Job Types pills */}
-            <div className="md:col-span-4">
-              <span className="block text-xs font-semibold text-slate-500 mb-2">Tipo de Empleo</span>
-              <div className="flex flex-wrap gap-2">
+            <div className="md:col-span-4 space-y-2">
+              <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Tipo de Empleo</span>
+              <div className="flex flex-wrap gap-1.5">
                 {JOB_TYPES.map(type => {
                   const active = activeFilters.jobTypes.includes(type);
                   return (
                     <button
                       key={type}
                       onClick={() => toggleJobType(type)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors focus:outline-none ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 focus:outline-none cursor-pointer ${
                         active 
-                          ? "bg-primary text-white border-primary" 
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
+                          ? "bg-primary text-white border-primary shadow-sm scale-102" 
+                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-350 hover:bg-slate-50"
                       }`}
                     >
                       {type}
@@ -1502,22 +1524,27 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Source checkboxes */}
-            <div className="md:col-span-3">
-              <span className="block text-xs font-semibold text-slate-500 mb-2">Fuentes</span>
-              <div className="grid grid-cols-2 gap-2 text-xs font-medium text-slate-700">
+            {/* Source checkboxes redesigned as micro-buttons */}
+            <div className="md:col-span-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Fuentes habilitadas</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-1.5">
                 {SOURCES.map(src => {
                   const active = activeFilters.sources.includes(src.id);
                   return (
-                    <label key={src.id} className="flex items-center space-x-2 cursor-pointer select-none">
-                      <input 
-                        type="checkbox" 
-                        checked={active}
-                        onChange={() => toggleSource(src.id)}
-                        className="w-4 h-4 rounded text-primary focus:ring-primary border-slate-300"
-                      />
-                      <span>{src.label}</span>
-                    </label>
+                    <button 
+                      key={src.id}
+                      onClick={() => toggleSource(src.id)}
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold flex items-center justify-between transition-all duration-200 cursor-pointer select-none ${
+                        active
+                          ? "bg-slate-50 border-primary text-primary-dark shadow-sm"
+                          : "bg-white border-slate-150 text-slate-400 hover:bg-slate-50/50"
+                      }`}
+                    >
+                      <span className="truncate mr-1">{src.label}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${active ? "bg-primary" : "bg-slate-300"}`}></span>
+                    </button>
                   );
                 })}
               </div>
@@ -1526,40 +1553,41 @@ export default function Home() {
         </div>
 
         {/* STATUS & LIVE COUNT BAR */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs px-1">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 text-xs px-1">
           {/* Live count */}
-          <div className="text-slate-500 font-medium bg-slate-100 rounded-lg py-1.5 px-3 border border-slate-200">
+          <div className="text-slate-600 font-semibold bg-white rounded-xl py-2 px-4 border border-slate-200 shadow-premium flex items-center w-fit">
             {loading ? (
-              <span className="flex items-center space-x-1.5">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
-                <span>Cargando ofertas de empleo...</span>
+              <span className="flex items-center space-x-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Buscando puestos vacantes en tiempo real...</span>
               </span>
             ) : (
-              <>
-                <span className="font-bold text-slate-800">{sortedJobs.length}</span> empleos de{" "}
-                <span className="font-bold text-slate-800">
+              <span className="flex items-center space-x-1.5">
+                <span>Encontramos</span>
+                <span className="font-extrabold text-slate-800 px-1 bg-slate-100 rounded">{sortedJobs.length}</span> 
+                <span>ofertas de</span>
+                <span className="font-extrabold text-slate-800 px-1 bg-slate-100 rounded">
                   {Object.values(fetchStatus).filter(s => s.status === "loaded").length}
-                </span>{" "}
-                fuentes ·{" "}
-                <span className="font-bold text-success">
-                  {sortedJobs.filter(j => j.crRelevance === "high").length}
-                </span>{" "}
-                muy relevantes para CR
-              </>
+                </span>
+                <span>portales ·</span>
+                <span className="text-primary-dark font-extrabold flex items-center ml-1">
+                  🇨🇷 {sortedJobs.filter(j => j.crRelevance === "high").length} muy relevantes
+                </span>
+              </span>
             )}
           </div>
 
           {/* Sources status pills */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {SOURCES.map(src => {
               const statusObj = fetchStatus[src.id] || { status: "loading", msg: "Esperando..." };
               
-              let colorClass = "bg-slate-100 text-slate-500 border-slate-200";
+              let colorClass = "bg-slate-100 text-slate-550 border-slate-200";
               let statusText = "⏳";
               let tooltip = statusObj.msg;
 
               if (statusObj.status === "loaded") {
-                colorClass = "bg-green-50 text-green-700 border-green-200";
+                colorClass = "bg-teal-50/70 text-teal-700 border-teal-200/60";
                 statusText = "✓";
                 tooltip = "Cargado correctamente";
               } else if (statusObj.status === "failed") {
@@ -1567,7 +1595,7 @@ export default function Home() {
                 statusText = "✗";
                 tooltip = `Fallo: ${statusObj.msg}`;
               } else if (statusObj.status === "not_configured") {
-                colorClass = "bg-slate-100 text-slate-400 border-slate-200 opacity-60";
+                colorClass = "bg-slate-100/60 text-slate-400 border-slate-200 opacity-60";
                 statusText = "⚪";
                 tooltip = "Falta clave API en ajustes";
               }
@@ -1576,103 +1604,103 @@ export default function Home() {
                 <span 
                   key={src.id}
                   title={tooltip}
-                  className={`${colorClass} border text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center space-x-1.5 transition-all`}
+                  className={`${colorClass} border text-[11px] px-2.5 py-1.5 rounded-xl font-bold flex items-center space-x-1.5 transition-all shadow-premium cursor-help`}
                 >
                   <span>{src.label}</span>
-                  <span className="font-bold">{statusText}</span>
+                  <span className="font-extrabold text-[10px]">{statusText}</span>
                 </span>
               );
             })}
           </div>
         </div>
 
-        {/* CV MATCHER PANEL (Collapsible) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {/* CV MATCHER PANEL (Collapsible Dashboard Card) */}
+        <div className="bg-slate-900 text-white rounded-2xl shadow-premium border border-slate-800 overflow-hidden">
           <button 
             onClick={() => setIsCVExpanded(!isCVExpanded)}
-            className="w-full px-5 py-4 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors focus:outline-none"
+            className="w-full px-6 py-4.5 flex items-center justify-between bg-slate-950/60 hover:bg-slate-950 transition-colors focus:outline-none"
           >
-            <div className="flex items-center space-x-2.5">
-              <span className="text-lg">🎯</span>
-              <span className="font-semibold text-slate-800 text-sm md:text-base">Analizar compatibilidad de mi CV</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-xl">🎯</span>
+              <span className="font-extrabold text-white tracking-tight text-sm md:text-base">Matcher de Inteligencia Artificial para CV</span>
               {isCVParsed && (
-                <span className="bg-green-100 text-green-700 border border-green-300 text-xs px-2.5 py-0.5 rounded-full font-semibold">
+                <span className="bg-primary/20 text-primary-light border border-primary/40 text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
                   Análisis Activo
                 </span>
               )}
             </div>
-            <div className="flex items-center space-x-2 text-slate-550">
-              <span className="text-xs hidden md:inline font-medium mr-2">
-                Proveedor: {settings.aiProvider === "groq" ? "Groq (Llama 3)" : "Anthropic (Claude 3.5)"}
+            <div className="flex items-center space-x-2 text-slate-400">
+              <span className="text-[11px] hidden md:inline font-semibold tracking-wider uppercase bg-slate-800 px-2.5 py-1 rounded-lg">
+                Motor: {settings.aiProvider === "groq" ? "Groq (Llama 3.3)" : "Anthropic (Claude)"}
               </span>
-              <ChevronDown className={`w-5 h-5 transform transition-transform ${isCVExpanded ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-5 h-5 transform transition-transform duration-300 ${isCVExpanded ? "rotate-180" : ""}`} />
             </div>
           </button>
 
           {isCVExpanded && (
-            <div className="border-t border-slate-200 p-5 bg-white space-y-4">
-              <p className="text-xs text-slate-500 leading-relaxed max-w-3xl">
-                Ingresá el texto de tu currículum para compararlo automáticamente mediante Inteligencia Artificial con las ofertas de trabajo disponibles. Evaluaremos tus habilidades técnicas, nivel de idiomas, zona horaria y salario contra cada oferta.
+            <div className="border-t border-slate-800 p-6 bg-slate-900/50 space-y-4">
+              <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
+                Al pegar el texto de tu currículum, nuestro motor de IA comparará en tiempo real tu perfil con los puestos listados. Analizaremos tus aptitudes técnicas, idiomas y el calce de zona horaria con Costa Rica, organizando los empleos del de mayor coincidencia al menor.
               </p>
 
               <div className="space-y-2">
                 <textarea 
                   value={cvText}
                   onChange={(e) => setCvText(e.target.value)}
-                  rows={5} 
-                  placeholder="Pegá el texto de tu CV aquí (experiencia, educación, lenguajes, tecnologías)..." 
-                  className="w-full p-3 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all custom-scrollbar font-mono text-slate-700"
+                  rows={6} 
+                  placeholder="Pega el texto de tu currículum (Habilidades, herramientas, experiencia, idiomas, etc.)..." 
+                  className="w-full p-4 bg-slate-950 text-slate-100 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all custom-scrollbar font-mono placeholder-slate-600 leading-relaxed"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                <div className="flex space-x-3">
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                <div className="flex flex-wrap gap-2.5">
                   <button 
                     onClick={runCVAnalysis}
                     disabled={isAnalyzingCV}
-                    className="bg-accent hover:bg-accent-dark text-white px-5 py-2 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-all shadow-sm disabled:opacity-60"
+                    className="bg-accent hover:bg-accent-dark text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all shadow-md disabled:opacity-60 cursor-pointer"
                   >
                     {isAnalyzingCV ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Analizando {Math.min(allJobs.length, 30)} empleos...</span>
+                        <span>Analizando compatibilidad con {Math.min(allJobs.length, 30)} ofertas...</span>
                       </>
                     ) : (
                       <>
-                        <Zap className="w-4 h-4" />
-                        <span>Analizar empleos compatibles ↗</span>
+                        <Zap className="w-4 h-4 text-amber-300" />
+                        <span>Escanear y Evaluar Compatibilidad</span>
                       </>
                     )}
                   </button>
                   {isCVParsed && (
                     <button 
                       onClick={clearCVAnalysis}
-                      className="border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+                      className="border border-slate-750 hover:bg-slate-800 text-slate-350 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
                     >
-                      Limpiar análisis
+                      Limpiar Análisis de IA
                     </button>
                   )}
                 </div>
 
                 <button 
                   onClick={() => setIsSettingsOpen(true)}
-                  className="text-slate-500 hover:text-slate-800 text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+                  className="text-slate-400 hover:text-white text-xs font-bold flex items-center space-x-1.5 transition-colors"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Configurar proveedor de IA</span>
+                  <Settings className="w-4 h-4" />
+                  <span>Configurar Proveedores</span>
                 </button>
               </div>
 
               {!isAIKeyConfigured && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-lg p-3.5 text-xs flex items-start space-x-2.5">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Requiere Configuración</span>: Para utilizar el comparador de currículum, debés registrar tu clave API en la configuración.
+                <div className="bg-amber-950/40 border border-amber-900/60 text-amber-250 rounded-xl p-4 text-xs flex items-start space-x-3">
+                  <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <span className="font-bold">Requiere Clave API</span>: El validador de CV requiere una clave de API de Groq configurada localmente. 
                     <button 
                       onClick={() => setIsSettingsOpen(true)}
-                      className="underline font-bold ml-1.5 hover:text-amber-950"
+                      className="underline font-extrabold ml-1.5 hover:text-white"
                     >
-                      Configurar claves ahora
+                      Configurar Claves de API Ahora
                     </button>
                   </div>
                 </div>
@@ -1688,18 +1716,18 @@ export default function Home() {
             /* Show Skeletons */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(9)].map((_, i) => (
-                <div key={i} className="animate-pulse bg-white rounded-xl p-6 border border-slate-200 shadow-sm space-y-4">
+                <div key={i} className="animate-pulse bg-white rounded-2xl p-6 border border-slate-200 shadow-premium space-y-4">
                   <div className="flex justify-between items-center">
                     <div className="h-4 bg-slate-200 rounded w-1/4"></div>
                     <div className="h-4 bg-slate-200 rounded w-8"></div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-5 bg-slate-350 rounded w-3/4"></div>
-                    <div className="h-5 bg-slate-350 rounded w-1/2"></div>
+                    <div className="h-5 bg-slate-300 rounded w-3/4"></div>
+                    <div className="h-5 bg-slate-300 rounded w-1/2"></div>
                   </div>
                   <div className="flex space-x-2 pt-1">
-                    <div className="h-5 bg-slate-200 rounded w-20"></div>
-                    <div className="h-5 bg-slate-200 rounded w-20"></div>
+                    <div className="h-5 bg-slate-200 rounded w-16"></div>
+                    <div className="h-5 bg-slate-200 rounded w-16"></div>
                   </div>
                   <div className="h-16 bg-slate-200 rounded"></div>
                   <div className="flex space-x-2 pt-2">
@@ -1711,17 +1739,17 @@ export default function Home() {
             </div>
           ) : sortedJobs.length === 0 ? (
             /* Empty State */
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center max-w-xl mx-auto space-y-4">
-              <div className="text-4xl">🔍</div>
-              <h3 className="font-bold text-lg text-slate-800">No encontramos empleos con esos filtros</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                Probá ampliando el rango de fechas, seleccionando más fuentes, o incluyendo todas las categorías y niveles de relevancia de Costa Rica.
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-xl mx-auto space-y-4 shadow-premium">
+              <div className="text-5xl">🔍</div>
+              <h3 className="font-extrabold text-lg text-slate-800">No encontramos ofertas con esos criterios</h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+                Prueba borrando los filtros activos, incluyendo otras fuentes de empleo o ampliando los rangos de idioma y palabras clave.
               </p>
               <button 
                 onClick={resetAllFilters}
-                className="bg-primary hover:bg-primary-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+                className="bg-primary hover:bg-primary-dark text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer"
               >
-                Restablecer filtros
+                Restablecer todos los filtros
               </button>
             </div>
           ) : (
@@ -1733,7 +1761,7 @@ export default function Home() {
                   const scoreObj = aiScores[job.id];
                   const isExpanded = !!expandedCards[job.id];
 
-                  // Description raw preview (stripping tags for safety/length)
+                  // Description raw preview (stripping HTML tags for safety/length)
                   const cleanedText = job.description
                     ? job.description.replace(/<\/?[^>]+(>|$)/g, "")
                     : "";
@@ -1743,13 +1771,13 @@ export default function Home() {
                   return (
                     <div 
                       key={job.id} 
-                      className="job-card bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                      className="group bg-white rounded-2xl border border-slate-200 p-5.5 shadow-premium hover:shadow-premium-hover hover:-translate-y-1 transition-all-300 flex flex-col justify-between space-y-4"
                     >
-                      <div className="space-y-3">
+                      <div className="space-y-3.5">
                         {/* Star & Date Row */}
-                        <div className="flex justify-between items-center text-[10px] text-slate-400">
-                          <span className="font-medium flex items-center">
-                            <Clock className="w-3.5 h-3.5 mr-1" />
+                        <div className="flex justify-between items-center text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                          <span className="flex items-center">
+                            <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" />
                             {formatTimeAgo(job.date)}
                           </span>
                           <button 
@@ -1757,73 +1785,79 @@ export default function Home() {
                             className="text-slate-400 hover:text-amber-500 transition-colors p-1" 
                             title={isFav ? "Quitar de favoritos" : "Guardar en favoritos"}
                           >
-                            <Star className={`w-5 h-5 ${isFav ? "text-amber-500 fill-current" : ""}`} />
+                            <Star className={`w-5 h-5 ${isFav ? "text-amber-400 fill-current" : ""}`} />
                           </button>
                         </div>
 
                         {/* Company & Source Badge */}
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-semibold text-slate-500 tracking-wide truncate max-w-[150px]" title={job.company}>
+                          <span className="text-xs font-bold text-slate-500 tracking-wide truncate max-w-[155px]" title={job.company}>
                             {job.company}
                           </span>
-                          <span className={`${sourceColors[job.source] || "bg-slate-100 text-slate-700"} border text-[10px] px-2 py-0.5 rounded font-bold`}>
+                          <span className={`${sourceColors[job.source] || "bg-slate-100 text-slate-700"} border text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide`}>
                             {job.sourceLabel}
                           </span>
                         </div>
 
                         {/* Title */}
-                        <h4 className="font-bold text-slate-900 leading-snug hover:text-primary transition-colors text-sm line-clamp-2 h-[2.5rem]" title={job.title}>
+                        <h4 className="font-extrabold text-slate-850 leading-snug group-hover:text-primary-dark transition-colors duration-300 text-sm line-clamp-2 h-[2.5rem]" title={job.title}>
                           {job.title}
                         </h4>
 
                         {/* Relevance and Info chips */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                           {job.crRelevance === "high" ? (
-                            <span className="bg-primary text-white border border-primary text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">🇨🇷 Alta</span>
+                            <span className="bg-teal-50 text-teal-700 border border-teal-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide flex items-center space-x-0.5">
+                              <span>🇨🇷</span> <span>Alta</span>
+                            </span>
                           ) : job.crRelevance === "medium" ? (
-                            <span className="bg-slate-100 text-slate-700 border border-slate-350 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">🌎 Media</span>
+                            <span className="bg-slate-100 text-slate-700 border border-slate-250 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide flex items-center space-x-0.5">
+                              <span>🌎</span> <span>Media</span>
+                            </span>
                           ) : (
-                            <span className="bg-slate-50 text-slate-400 border border-slate-200 text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wider">🔵 Baja</span>
+                            <span className="bg-slate-50 text-slate-400 border border-slate-200 text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wide">
+                              Baja
+                            </span>
                           )}
                           {job.language === "es" ? (
-                            <span className="bg-emerald-55 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">🇪🇸 Español</span>
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇪🇸 ES</span>
                           ) : (
-                            <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[10px] px-2 py-0.5 rounded font-medium uppercase tracking-wider">🇬🇧 Inglés</span>
+                            <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇬🇧 EN</span>
                           )}
-                          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wider">{job.jobType}</span>
-                          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-2 py-0.5 rounded font-semibold uppercase tracking-wider">{job.category}</span>
+                          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wide">{job.jobType}</span>
+                          <span className="bg-slate-100 text-slate-600 border border-slate-200 text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wide">{job.category}</span>
                         </div>
 
                         {/* Salary */}
                         {job.salary && (
-                          <div className="text-xs font-bold text-success flex items-center space-x-1 py-1 px-2.5 bg-green-50 border border-green-200 rounded-md w-fit">
+                          <div className="text-xs font-bold text-success flex items-center space-x-1.5 py-1 px-3 bg-green-50 border border-green-200/70 rounded-xl w-fit">
                             <DollarSign className="w-3.5 h-3.5" />
                             <span>{job.salary}</span>
                           </div>
                         )}
 
-                        {/* CV Compatibility score ring */}
+                        {/* CV Compatibility score ring (Redesigned) */}
                         {scoreObj && (
-                          <div className="flex items-center space-x-2.5 bg-slate-50 border border-slate-200 rounded-lg p-2 w-full" title={scoreObj.reason}>
-                            <div className="relative w-10 h-10 flex items-center justify-center flex-shrink-0">
+                          <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 rounded-xl p-3 w-full shadow-sm" title={scoreObj.reason}>
+                            <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
                               <svg className="w-full h-full transform -rotate-90">
-                                <circle cx="20" cy="20" r="18" stroke="#e2e8f0" strokeWidth="3" fill="transparent" />
+                                <circle cx="24" cy="24" r="21" stroke="#e2e8f0" strokeWidth="3" fill="transparent" />
                                 <circle 
-                                  cx="20" 
-                                  cy="20" 
-                                  r="18" 
+                                  cx="24" 
+                                  cy="24" 
+                                  r="21" 
                                   stroke={getScoreColor(scoreObj.score)} 
-                                  strokeWidth="3" 
+                                  strokeWidth="3.5" 
                                   fill="transparent"
-                                  strokeDasharray="113.1" 
-                                  strokeDashoffset={113.1 - (113.1 * scoreObj.score) / 100}
-                                  className="transition-all duration-500 ease-out" 
+                                  strokeDasharray="131.9" 
+                                  strokeDashoffset={131.9 - (131.9 * scoreObj.score) / 100}
+                                  className="transition-all duration-700 ease-out" 
                                 />
                               </svg>
-                              <span className="absolute text-[10px] font-bold text-slate-800">{scoreObj.score}%</span>
+                              <span className="absolute text-[11px] font-black text-slate-800">{scoreObj.score}%</span>
                             </div>
                             <div className="text-[11px] leading-snug">
-                              <span className="font-bold text-slate-700 block">CV Match</span>
+                              <span className="font-extrabold text-slate-850 block text-xs">Coincidencia CV</span>
                               <span className="text-slate-500 line-clamp-1 italic">"{scoreObj.reason}"</span>
                             </div>
                           </div>
@@ -1832,9 +1866,9 @@ export default function Home() {
                         {/* Description Preview & Toggle */}
                         <div className="text-xs text-slate-600 leading-relaxed pt-1.5 space-y-1.5">
                           {!isExpanded ? (
-                            <p className="text-slate-600">{previewText}</p>
+                            <p className="text-slate-600 font-medium">{previewText}</p>
                           ) : (
-                            <p className="text-slate-600 select-text overflow-x-auto whitespace-pre-line bg-slate-50 p-2.5 rounded-lg border border-slate-150">
+                            <p className="text-slate-700 font-medium select-text overflow-x-auto whitespace-pre-line bg-slate-50/70 p-3.5 rounded-xl border border-slate-150 leading-relaxed custom-scrollbar">
                               {cleanedText}
                             </p>
                           )}
@@ -1842,29 +1876,29 @@ export default function Home() {
                           {hasMoreDesc && (
                             <button 
                               onClick={() => setExpandedCards(prev => ({ ...prev, [job.id]: !isExpanded }))}
-                              className="text-primary hover:text-primary-dark font-semibold text-[11px] flex items-center space-x-1 transition-colors focus:outline-none"
+                              className="text-primary-dark hover:text-primary-light font-bold text-[11px] flex items-center space-x-1 transition-colors focus:outline-none cursor-pointer"
                             >
-                              <span>{isExpanded ? "Ver menos" : "Ver más"}</span>
-                              <ChevronDown className={`w-3.5 h-3.5 transform transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                              <span>{isExpanded ? "Ver menos" : "Ver más detalles"}</span>
+                              <ChevronDown className={`w-3.5 h-3.5 transform transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
                             </button>
                           )}
                         </div>
                       </div>
 
                       {/* Footer Actions */}
-                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      <div className="flex items-center gap-2 pt-3.5 border-t border-slate-100">
                         <a 
                           href={job.url} 
                           target="_blank" 
                           rel="noreferrer"
-                          className="flex-grow bg-accent hover:bg-accent-dark text-white text-xs font-semibold py-2 px-3 rounded-lg text-center shadow-sm transition-colors flex items-center justify-center space-x-1"
+                          className="flex-grow bg-gradient-to-r from-accent to-accent-dark hover:brightness-105 text-white text-xs font-bold py-2.5 px-4 rounded-xl text-center shadow-sm hover:shadow transition-all duration-200 flex items-center justify-center space-x-1.5"
                         >
-                          <span>Ver oferta</span>
+                          <span>Aplicar ahora</span>
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                         <button 
                           onClick={() => toggleFavorite(job.id)}
-                          className={`border text-xs font-semibold py-2 px-3 rounded-lg flex items-center justify-center space-x-1 transition-all ${
+                          className={`border text-xs font-bold py-2.5 px-4 rounded-xl flex items-center justify-center space-x-1.5 transition-all cursor-pointer ${
                             isFav 
                               ? "bg-amber-50 border-amber-300 text-amber-600" 
                               : "border-slate-300 hover:bg-slate-50 text-slate-600"
@@ -1881,10 +1915,10 @@ export default function Home() {
 
               {/* Load More Button */}
               {sortedJobs.length > displayLimit && (
-                <div className="flex justify-center pt-4">
+                <div className="flex justify-center pt-6">
                   <button 
                     onClick={() => setDisplayLimit(prev => prev + 30)}
-                    className="bg-primary hover:bg-primary-dark text-white font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors shadow-sm flex items-center space-x-2"
+                    className="bg-primary hover:bg-primary-dark text-white font-bold text-xs uppercase tracking-wider px-7 py-3 rounded-xl transition-all-300 shadow-md hover:shadow-lg flex items-center space-x-2 cursor-pointer"
                   >
                     <span>Cargar más empleos</span>
                     <Plus className="w-4 h-4" />
@@ -1898,15 +1932,15 @@ export default function Home() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-navy border-t border-slate-800 text-slate-400 text-xs py-8 mt-12">
-        <div className="max-w-7xl mx-auto px-4 text-center space-y-3">
-          <p className="font-semibold text-slate-300">TrabajoCR 🇨🇷</p>
-          <p>Datos provistos por Remotive, RemoteOK, Jooble, The Muse, We Work Remotely, Arbeitnow, Getonbrd, RemotoJob y Findjobit.</p>
-          <p className="text-slate-500">
-            Desarrollado de forma local en tu navegador · El almacenamiento es local (localStorage) y las claves API nunca se envían a servidores externos.
+      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 text-[11px] py-10 mt-16 leading-relaxed">
+        <div className="max-w-7xl mx-auto px-4 text-center space-y-4">
+          <p className="font-black text-slate-200 text-sm">Trabajos<span className="text-primary font-mono">CR</span> 🇨🇷</p>
+          <p className="max-w-xl mx-auto">Consolidando ofertas laborales de Remotive, RemoteOK, Jooble, The Muse, We Work Remotely, Arbeitnow, Getonbrd, RemotoJob y Findjobit.</p>
+          <p className="text-slate-500 max-w-lg mx-auto">
+            Ejecutado localmente en tu navegador. Toda la información y configuraciones se guardan localmente mediante localStorage. Las claves de API no viajan a ningún servidor externo.
           </p>
-          <p className="text-slate-650 pt-2 border-t border-slate-800 max-w-xs mx-auto">
-            Hecho en 🇨🇷
+          <p className="text-slate-600 pt-3 border-t border-slate-850 max-w-xs mx-auto text-[10px] font-bold uppercase tracking-widest">
+            Hecho en Costa Rica 🇨🇷
           </p>
         </div>
       </footer>
@@ -1919,7 +1953,7 @@ export default function Home() {
           onSave={saveSettings}
         />
       )}
-    </>
+    </div>
   );
 }
 
