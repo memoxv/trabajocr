@@ -66,11 +66,41 @@ interface CandidateProfile {
 }
 
 // --- NORMALIZATION HELPERS (Client-Side) ---
+function decodeUTF8DoubleEncoded(str: string): string {
+  if (!str) return "";
+  if (!str.includes("Ã") && !str.includes("â")) return str;
+  try {
+    return decodeURIComponent(escape(str));
+  } catch (e) {
+    return str
+      .replace(/Ã¡/g, "á")
+      .replace(/Ã©/g, "é")
+      .replace(/Ã­/g, "í")
+      .replace(/Ã³/g, "ó")
+      .replace(/Ãº/g, "ú")
+      .replace(/Ã±/g, "ñ")
+      .replace(/Ã/g, "Á")
+      .replace(/Ã/g, "É")
+      .replace(/Ã/g, "Í")
+      .replace(/Ã“/g, "Ó")
+      .replace(/Ã/g, "Ú")
+      .replace(/Ã‘/g, "Ñ")
+      .replace(/Ã¼/g, "ü")
+      .replace(/â\x80\x9c/g, "“")
+      .replace(/â\x80\x9d/g, "”")
+      .replace(/â\x80\x99/g, "’")
+      .replace(/â\x80\x93/g, "–")
+      .replace(/â\x80\x94/g, "—")
+      .replace(/â\x80\xa6/g, "…");
+  }
+}
+
 function decodeHTMLEntities(text: string): string {
   if (!text) return "";
   try {
+    const cleaned = decodeUTF8DoubleEncoded(text);
     const txt = document.createElement("textarea");
-    txt.innerHTML = text;
+    txt.innerHTML = cleaned;
     return txt.value;
   } catch (e) {
     return text;
@@ -154,6 +184,9 @@ function categorizeJob(job: Partial<Job>): string {
   }
   if (/\b(admin|administracion|administración|assistant|asistente|recepcionista|secretaria|hr|rh|recursos humanos|human resources|recruiter|reclutador|talent|people ops|operations|operaciones)\b/.test(text)) {
     return "Administración / RH";
+  }
+  if (/\b(psicologo|psicólogo|psicologa|psicóloga|docente|profesor|profesora|teacher|educacion|educación|enseñanza|salud|medico|médico|doctor|enfermero|enfermera|clinica|clínica|hospital|universidad|colegio|escuela|terapeuta|therapy|health)\b/.test(text)) {
+    return "Educación y Salud";
   }
   if (/\b(marketing|seo|growth|social|media|copywriter|content|advertising|publicidad)\b/.test(text)) {
     return "Marketing";
@@ -711,7 +744,7 @@ export default function Home() {
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Constants
-  const CATEGORIES = ["Tecnología", "Administración / RH", "Marketing", "Diseño", "Soporte", "Ventas", "Finanzas", "Datos", "Otro"];
+  const CATEGORIES = ["Tecnología", "Administración / RH", "Educación y Salud", "Marketing", "Diseño", "Soporte", "Ventas", "Finanzas", "Datos", "Otro"];
   const JOB_TYPES = ["Full-time", "Part-time", "Contrato", "Freelance"];
   const SOURCES = [
     { id: "remotive", label: "Remotive" },
@@ -1362,7 +1395,25 @@ export default function Home() {
       finalIdMap.set(job.id, job);
     });
 
-    const jobsList = Array.from(finalIdMap.values());
+    const jobsList = Array.from(finalIdMap.values()).map(job => {
+      const title = decodeUTF8DoubleEncoded(job.title);
+      const company = decodeUTF8DoubleEncoded(job.company);
+      const description = decodeUTF8DoubleEncoded(job.description);
+      
+      const cleaned: Job = {
+        ...job,
+        title,
+        company,
+        description
+      };
+      
+      cleaned.language = detectLanguage(cleaned);
+      cleaned.category = categorizeJob(cleaned);
+      cleaned.crRelevance = computeRelevance(cleaned);
+      
+      return cleaned;
+    });
+
     jobsList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     setAllJobs(jobsList);
