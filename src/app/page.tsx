@@ -34,7 +34,7 @@ interface Job {
   crRelevance: "high" | "medium" | "low";
   category: string;
   jobType: string;
-  language: "es" | "en";
+  language: "es" | "en" | "both" | "pt";
 }
 
 interface FetchStatus {
@@ -55,6 +55,16 @@ interface AppSettings {
 }
 
 // --- NORMALIZATION HELPERS (Client-Side) ---
+function decodeHTMLEntities(text: string): string {
+  if (!text) return "";
+  try {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = text;
+    return txt.value;
+  } catch (e) {
+    return text;
+  }
+}
 function truncateString(str: string, num: number): string {
   if (!str) return "";
   if (str.length <= num) return str;
@@ -166,28 +176,27 @@ function classifyJobType(job: Partial<Job>): string {
   return "Full-time";
 }
 
-function detectLanguage(job: Partial<Job>): "es" | "en" {
+function detectLanguage(job: Partial<Job>): "es" | "en" | "both" | "pt" {
   const text = ` ${job.title} ${job.description} `.toLowerCase();
   
-  // Portuguese markers (exclusively Portuguese or extremely common in PT and rare/absent in ES)
-  const portugueseMarkers = [
-    " desenvolvimento ", " equipe ", " você ", " não ", " com ", " em ", 
-    " um ", " uma ", " da ", " do ", " dos ", " das ", " seu ", " sua ",
-    " vaga ", " vagas ", " inscrição ", " inscrições ", " conosco ", " português ", " portugues "
+  // 1. Detect Portuguese first to avoid false Spanish/English matches
+  const portugueseUniqueWords = [
+    " desenvolvimento", " equipe", " você", " não", " com ", " em ", 
+    " uma ", " da ", " do ", " dos ", " das ", " seu ", " sua ",
+    " vaga", " vagas", " inscrição", " inscrições", " conosco", " português", " portugues",
+    " relação", " geração", " soluções", " atenção", " informações", " gerenciamento"
   ];
   
-  let portugueseCount = 0;
-  portugueseMarkers.forEach(word => {
-    if (text.includes(word)) {
-      portugueseCount++;
-    }
+  let ptCount = 0;
+  portugueseUniqueWords.forEach(word => {
+    if (text.includes(word)) ptCount++;
   });
-
-  // If it has strong Portuguese markers, it is not Spanish
-  if (portugueseCount >= 2 || text.includes(" desenvolvimento ") || text.includes(" equipe ") || text.includes(" você ") || text.includes(" português ")) {
-    return "en";
+  
+  if (ptCount >= 2 || text.includes(" desenvolvimento") || text.includes(" equipe") || text.includes(" você") || text.includes(" vaga")) {
+    return "pt";
   }
 
+  // 2. Count Spanish stop words
   const spanishStopWords = [
     " de ", " que ", " en ", " el ", " la ", " los ", " las ", " un ", " una ", 
     " para ", " con ", " por ", " como ", " más ", " su ", " sus ", " al ", " del ",
@@ -195,14 +204,29 @@ function detectLanguage(job: Partial<Job>): "es" | "en" {
     " trabajo ", " empleo ", " remoto ", " empresa ", " equipo ", " desarrollo "
   ];
   
-  let spanishCount = 0;
+  let esCount = 0;
   spanishStopWords.forEach(word => {
-    if (text.includes(word)) {
-      spanishCount++;
-    }
+    if (text.includes(word)) esCount++;
   });
 
-  if (spanishCount >= 3) {
+  // 3. Count English stop words
+  const englishStopWords = [
+    " the ", " of ", " and ", " to ", " in ", " is ", " you ", " that ", " it ", 
+    " for ", " on ", " with ", " as ", " this ", " will ", " your ", " with ",
+    " requirements ", " experience ", " remote ", " company ", " team ", " development "
+  ];
+
+  let enCount = 0;
+  englishStopWords.forEach(word => {
+    if (text.includes(word)) enCount++;
+  });
+
+  // 4. Determine language type
+  if (esCount >= 4 && enCount >= 4) {
+    return "both";
+  }
+  
+  if (esCount >= 3) {
     return "es";
   }
   
@@ -1113,8 +1137,8 @@ export default function Home() {
 
     // 9. Language Filter
     if (activeFilters.language !== "todos") {
-      if (activeFilters.language === "es" && job.language !== "es") return false;
-      if (activeFilters.language === "en" && job.language !== "en") return false;
+      if (activeFilters.language === "es" && job.language !== "es" && job.language !== "both") return false;
+      if (activeFilters.language === "en" && job.language !== "en" && job.language !== "both") return false;
     }
 
     return true;
@@ -1761,9 +1785,9 @@ export default function Home() {
                   const scoreObj = aiScores[job.id];
                   const isExpanded = !!expandedCards[job.id];
 
-                  // Description raw preview (stripping HTML tags for safety/length)
+                  // Description raw preview (stripping HTML tags and decoding HTML entities for safety/length)
                   const cleanedText = job.description
-                    ? job.description.replace(/<\/?[^>]+(>|$)/g, "")
+                    ? decodeHTMLEntities(job.description.replace(/<\/?[^>]+(>|$)/g, ""))
                     : "";
                   const previewText = cleanedText.length > 180 ? cleanedText.slice(0, 180) + "..." : cleanedText;
                   const hasMoreDesc = cleanedText.length > 180;
@@ -1791,8 +1815,8 @@ export default function Home() {
 
                         {/* Company & Source Badge */}
                         <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-bold text-slate-500 tracking-wide truncate max-w-[155px]" title={job.company}>
-                            {job.company}
+                          <span className="text-xs font-bold text-slate-500 tracking-wide truncate max-w-[155px]" title={decodeHTMLEntities(job.company)}>
+                            {decodeHTMLEntities(job.company)}
                           </span>
                           <span className={`${sourceColors[job.source] || "bg-slate-100 text-slate-700"} border text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide`}>
                             {job.sourceLabel}
@@ -1800,8 +1824,8 @@ export default function Home() {
                         </div>
 
                         {/* Title */}
-                        <h4 className="font-extrabold text-slate-850 leading-snug group-hover:text-primary-dark transition-colors duration-300 text-sm line-clamp-2 h-[2.5rem]" title={job.title}>
-                          {job.title}
+                        <h4 className="font-extrabold text-slate-850 leading-snug group-hover:text-primary-dark transition-colors duration-300 text-sm line-clamp-2 h-[2.5rem]" title={decodeHTMLEntities(job.title)}>
+                          {decodeHTMLEntities(job.title)}
                         </h4>
 
                         {/* Relevance and Info chips */}
@@ -1821,6 +1845,10 @@ export default function Home() {
                           )}
                           {job.language === "es" ? (
                             <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇪🇸 ES</span>
+                          ) : job.language === "both" ? (
+                            <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇪🇸🇬🇧 ES+EN</span>
+                          ) : job.language === "pt" ? (
+                            <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇵🇹 PT</span>
                           ) : (
                             <span className="bg-slate-100 text-slate-500 border border-slate-200 text-[10px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wide">🇬🇧 EN</span>
                           )}
